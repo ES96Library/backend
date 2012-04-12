@@ -9,6 +9,7 @@ gem 'chronic' # converts plaintext into datetime (i.e. now => 04/06/12 6:00 PM)
 gem 'sqlite3' # default database in rails
 gem 'mysql2', '> 0.3' #adds mysql support
 gem "paperclip", "~> 2.4" # image uploading
+gem 'aws-sdk', '~> 1.3.4' # image storage
 # gem "koala" #facebook authentication
 gem 'validates_timeliness', '~> 3.0.2' # datetime validation
 

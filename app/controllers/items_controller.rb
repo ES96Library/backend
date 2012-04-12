@@ -20,20 +20,20 @@ class ItemsController < ApplicationController
 					facet :property_id
 				end.results
 	@items = Item.find(@search.collect{|value| value.item_id})
-	@build_json = {:item => @items.collect{|item| [item.id, :properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
+	@build_json = {:item => @items.collect{|item| [item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), :properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
 	respond_to do |format|
 		format.html # index.html.erb
-		format.json { render :json => @build_json.to_json(:only => [:item, :id, :properties, :name]) }
+		format.json { render :json => @build_json.to_json(:only => [:item, :id, :image, :thumb, :preview, :properties, :name]) }
 	end
   end
   
   def index
     @items = Item.all.paginate(:per_page => 50, :page => params[:page])
-	@build_json = {:item => @items.collect{|item| [item.id, :properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
+	@build_json = {:item => @items.collect{|item| [item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), :properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
     respond_to do |format|
       format.html # index.html.erb
 	  format.xml { render xml: @build_json}
-      format.json { render :json => @build_json.to_json(:only => [:item, :id, :properties, :name]) }
+      format.json { render :json => @build_json.to_json(:only => [:item, :id, :image, :thumb, :preview, :properties, :name]) }
     end
   end
 
@@ -41,11 +41,11 @@ class ItemsController < ApplicationController
   # GET /items/1.json
   def show
     @item = Item.find(params[:id])
-	@build_json = {:id => @item.id, :properties => @item.properties.collect{|property| [property.name, property.values.where(:item_id => @item.id)]}}
+	@build_json = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.properties.collect{|property| [property.name, property.values.where(:item_id => @item.id)]}}
     respond_to do |format|
       format.html # show.html.erb
-	  format.xml { render xml: @build_json}
-      format.json { render :json => @build_json.to_json(:only => [:id, :properties, :name]) }
+	  format.xml  { render xml: @build_json}
+      format.json { render :json => @build_json.to_json(:only => [:id, :image, :thumb, :preview, :properties, :name]) }
     end
   end
 
@@ -53,7 +53,7 @@ class ItemsController < ApplicationController
   # GET /items/new.json
   def new
     @item = Item.new
-	@build_json = {:id => @item.id, :properties => @item.properties.collect{|property| [property.name, property.values.where(:item_id => @item.id)]}}
+	@build_json = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.properties.collect{|property| [property.name, property.values.where(:item_id => @item.id)]}}
     respond_to do |format|
       format.html # new.html.erb
       format.json { render json: @build_json }
