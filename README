@@ -16,7 +16,7 @@ rails generate sunspot_rails:install
 bundle exec rake sunspot:solr:start
 rails server &
 
-4. Server will be on http://localhost:3000/
+4. Server will be on http://hollre.com:3000/
 
 5. If you add data to the SQL databse manually, you will want to reindex the material for search:
 
@@ -32,7 +32,6 @@ GET /items/new.json 	- new (don't add to db yet)
 POST /items.json 		- create
 PUT /items/:id.json 	- update
 DELETE /items/:id.json 	- destroy an item
-
 GET /items/search.json 	- keyword search all items
 	value[]=...&value[]=... 			
 						- search with an array of keywords
@@ -41,6 +40,9 @@ GET /items/search.json 	- keyword search all items
 	property_id[]=...&property_id[]=...	
 						- search within an array of 
 						properties by property id
+
+GET /properties.json       - index of all property names with ID
+GET /properties/:id.json   - show all values for a specific property in DB
 
 -----------------------
 == Getting Started with Rails
