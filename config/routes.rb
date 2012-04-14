@@ -4,9 +4,10 @@ Atoolkit2::Application.routes.draw do
   resources :items do 
 	collection do
 		get :search
+		post :search
 	end
   end
-
+  
   resources :properties
 
   # The priority is based upon order of creation:

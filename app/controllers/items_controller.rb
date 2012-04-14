@@ -5,21 +5,24 @@ class ItemsController < ApplicationController
   require 'will_paginate/array'
   
   def search
-	if params[:property_id].blank? && params[:value].blank? 
-		respond_to do |format|
-			format.html {head :not_found}
-			format.json {head :not_found}
+	## new key/value pair search
+	@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
+	if !params["pair"].blank?
+		params["pair"].each do |pair| 
+			@items = @items.where(:properties => {:id => pair["property_id"]}, :values => {:name => pair["value"]})
 		end
-		return
-	end
-	@search = 	Value.search do
+		# get rid of the join table - messes up JSON output (for now)
+		@items = Item.find(@items.collect{|item| [item.id]})
+	else
+		@search = 	Value.search do
 					keywords params[:value]
 					order_by(:score, :desc)
 					paginate :page => params[:page], :per_page => 50
 					with(:property_id, params[:property_id]) unless params[:property_id].blank?
 					facet :property_id
 				end.results
-	@items = Item.find(@search.collect{|value| value.item_id})
+		@items = Item.find(@search.collect{|value| value.item_id})
+	end
 	@build_json = {:item => @items.collect{|item| [item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), :properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
 	respond_to do |format|
 		format.html # index.html.erb
