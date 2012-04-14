@@ -21,7 +21,6 @@ rails server &
 5. If you add data to the SQL databse manually, you will want to reindex the material for search:
 
 bundle exec rake sunspot:solr:reindex
-
 ----------------------
 
 API specification: 
@@ -32,6 +31,7 @@ GET /items/new.json 	- new (don't add to db yet)
 POST /items.json 		- create
 PUT /items/:id.json 	- update
 DELETE /items/:id.json 	- destroy an item
+
 GET /items/search.json 	- keyword search all items
 	value[]=...&value[]=... 			
 						- search with an array of keywords
@@ -40,10 +40,16 @@ GET /items/search.json 	- keyword search all items
 	property_id[]=...&property_id[]=...	
 						- search within an array of 
 						properties by property id
-
+						
+POST /items/search.json - key:value pair search
+	Example:
+		{"pair"=>[
+			{"property_id"=>"3", "value"=>"Manuscript"},
+			{"property_id"=>"1", "value"=>"Thomas Edison"}
+		]}
+	
 GET /properties.json       - index of all property names with ID
 GET /properties/:id.json   - show all values for a specific property in DB
-
 -----------------------
 == Getting Started with Rails
 
