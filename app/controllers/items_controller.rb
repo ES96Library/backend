@@ -9,10 +9,16 @@ class ItemsController < ApplicationController
 	@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
 	if !params["pair"].blank?
 		params["pair"].each do |pair| 
-			@items = @items.where(:properties => {:id => pair["property_id"]}, :values => {:name => pair["value"]})
+			@items = @items.find(:all, :conditions => ["properties.id = ? AND values.name REGEXP ?", pair["property_id"], pair["value"]])
 		end
 		# get rid of the join table - messes up JSON output (for now)
-		@items = Item.find(@items.collect{|item| [item.id]})
+		@items = Item.find(@items.collect{|item| [item.id]}).paginate(:per_page => 50, :page => params[:page])
+		@build_json = {	:current_page => @items.current_page,
+					:per_page => @items.per_page,
+					:total_entries => @items.total_entries,
+					:item => @items.collect{|item| 
+					[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
+					:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
 	else
 		@search = 	Value.search do
 					keywords params[:value]
@@ -20,23 +26,33 @@ class ItemsController < ApplicationController
 					paginate :page => params[:page], :per_page => 50
 					with(:property_id, params[:property_id]) unless params[:property_id].blank?
 					facet :property_id
-				end.results
-		@items = Item.find(@search.collect{|value| value.item_id})
+				end
+		@items = @search.results
+		@items = Item.find(@items.collect{|value| value.item_id})
+		@build_json = {	:total_pages => @search.results.total_pages,
+					:next_page => @search.results.next_page,
+					:item => @items.collect{|item| 
+					[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
+					:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
 	end
-	@build_json = {:item => @items.collect{|item| [item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), :properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
 	respond_to do |format|
 		format.html # index.html.erb
-		format.json { render :json => @build_json.to_json(:only => [:item, :id, :image, :thumb, :preview, :properties, :name]) }
+		format.json { render :json => @build_json.to_json(:only => [:current_page, :per_page, :total_entries, :total_pages, :next_page, :item, :id, :image, :thumb, :preview, :properties, :name]) }
 	end
   end
   
   def index
     @items = Item.all.paginate(:per_page => 50, :page => params[:page])
-	@build_json = {:item => @items.collect{|item| [item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), :properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
+	@build_json = {	:current_page => @items.current_page,
+					:per_page => @items.per_page,
+					:total_entries => @items.total_entries,
+					:item => @items.collect{|item| 
+					[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
+					:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
     respond_to do |format|
       format.html # index.html.erb
 	  format.xml { render xml: @build_json}
-      format.json { render :json => @build_json.to_json(:only => [:item, :id, :image, :thumb, :preview, :properties, :name]) }
+      format.json { render :json => @build_json.to_json(:only => [:current_page, :per_page, :total_entries, :item, :id, :image, :thumb, :preview, :properties, :name]) }
     end
   end
 

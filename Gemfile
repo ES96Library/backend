@@ -18,6 +18,7 @@ gem 'will_paginate', '~> 3.0' # paginates everything
 # search related stuff
 gem 'sunspot_rails' # search plugin
 gem 'sunspot_solr' # optional pre-packaged Solr distribution for use in development
+gem 'progress_bar' 
 
 # layout-related stuff
 # gem 'twitter-bootstrap-rails'
