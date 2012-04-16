@@ -16,7 +16,7 @@ rails generate sunspot_rails:install
 bundle exec rake sunspot:solr:start
 rails server &
 
-4. Server will be on http://hollre.com:3000/
+4. Server will be on http://hollre.com/
 
 5. If you add data to the SQL databse manually, you will want to reindex the material for search:
 
