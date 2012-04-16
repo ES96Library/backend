@@ -48,3 +48,8 @@ group :test do
   # Pretty printed test output
   gem 'turn', :require => false
 end
+
+# speed up development server
+group :development do
+  gem 'rails-dev-boost'
+end
