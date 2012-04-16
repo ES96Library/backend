@@ -35,6 +35,15 @@ class ItemsController < ApplicationController
 					[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
 					:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
 	end
+	if params["pair"].blank? && params[:value].blank? && params[:property_id].blank?
+		@items = Item.all.paginate(:per_page => 50, :page => params[:page])
+		@build_json = {	:current_page => @items.current_page,
+					:per_page => @items.per_page,
+					:total_entries => @items.total_entries,
+					:item => @items.collect{|item| 
+					[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
+					:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
+	end
 	respond_to do |format|
 		format.html # index.html.erb
 		format.json { render :json => @build_json.to_json(:only => [:current_page, :per_page, :total_entries, :total_pages, :next_page, :item, :id, :image, :thumb, :preview, :properties, :name]) }
