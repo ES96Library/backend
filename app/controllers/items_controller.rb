@@ -23,6 +23,10 @@ class ItemsController < ApplicationController
   caches_action :search, :cache_path => proc {|i| {:tag => @cache.to_s} }
   
   def search
+	if params["pair"].blank? && params[:value].blank? && params[:property_id].blank?
+		@items = Item.all
+	end
+	@items = @items.paginate(:per_page => 50, :page => params[:page])
 	respond_to do |format|
 		format.html # index.html.erb
 		format.json { 
@@ -127,32 +131,46 @@ class ItemsController < ApplicationController
   protected
 	def query
 		## new key/value pair search
-		@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
-
+		@joined = false
+		
 		if !params["pair"].blank? 
+			if !@joined
+				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
+				@joined = true
+			end
 			params["pair"].each do |pair| 
 				@items = @items.find(:all, :conditions => ["properties.id = ? AND values.name REGEXP ?", pair["property_id"], pair["value"]])
 			end
 		end
 		
 		if !params[:property_id].blank?
+			if !@joined
+				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
+				@joined = true
+			end
 			@items = @items.find(:all, :conditions => ["properties.id IN ?", params[:property_id]])
 		end
 		
 		if !params[:value].blank?
+			if !@joined
+				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
+				@joined = true
+			end
 			params[:value].each do |value|
-				@items = @items.find(:all, :conditions => ["values.name REGEXP ?", value["value"]])
+				@items = @items.find(:all, :conditions => ["values.name REGEXP ?", value])
 			end
 		end
 		
 		# get rid of the join table - messes up JSON output (for now)
-		@items = Item.find(@items.collect{|item| [item.id]})
-		
-		if params["pair"].blank? && params[:value].blank? && params[:property_id].blank?
-			@items = Item.all
+		if @joined
+			@items = Item.find(@items.collect{|item| [item.id]})
 		end
-		@items = @items.paginate(:per_page => 50, :page => params[:page])
-		@cache = Digest::MD5.hexdigest(@items.to_json())
+		
+		if @items.blank?
+			@cache = Digest::MD5.hexdigest('blank_search_win')
+		else
+			@cache = Digest::MD5.hexdigest(@items.paginate(:per_page => 50, :page => params[:page]).to_json())
+		end
 	end
   
 end
