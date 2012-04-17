@@ -3,6 +3,7 @@ class ItemsController < ApplicationController
   # GET /items.json
   
   require 'will_paginate/array'
+  before_filter :query, :only => [:search]
   
   caches_action :show, :cache_path => proc { |i|  
 	  item = Item.find i.params[:id]
@@ -19,43 +20,19 @@ class ItemsController < ApplicationController
 	  {:tag => item.updated_at.to_i*1000 + page}
   }
   
+  caches_action :search, :cache_path => proc {|i| {:tag => @cache.to_s} }
+  
   def search
-	## new key/value pair search
-	@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
-
-	if !params["pair"].blank? 
-		params["pair"].each do |pair| 
-			@items = @items.find(:all, :conditions => ["properties.id = ? AND values.name REGEXP ?", pair["property_id"], pair["value"]])
-		end
-	end
-	
-	if !params[:property_id].blank?
-		@items = @items.find(:all, :conditions => ["properties.id IN ?", params[:property_id]])
-	end
-	
-	if !params[:value].blank?
-		params[:value].each do |value|
-			@items = @items.find(:all, :conditions => ["values.name REGEXP ?", value["value"]])
-		end
-	end
-	
-	# get rid of the join table - messes up JSON output (for now)
-	@items = Item.find(@items.collect{|item| [item.id]}).paginate(:per_page => 50, :page => params[:page])
-	
-	if params["pair"].blank? && params[:value].blank? && params[:property_id].blank?
-		@items = Item.all.paginate(:per_page => 50, :page => params[:page])
-	end
-	
 	respond_to do |format|
 		format.html # index.html.erb
 		format.json { 
 			@build_json = {	:current_page => @items.current_page,
-					:per_page => @items.per_page,
-					:total_entries => @items.total_entries,
-					:item => @items.collect{|item| 
-					[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
-					:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
-			render :json => @build_json.to_json(:only => [:current_page, :per_page, :total_entries, :total_pages, :next_page, :item, :id, :image, :thumb, :preview, :properties, :name]) 
+							:per_page => @items.per_page,
+							:total_entries => @items.total_entries,
+							:item => @items.collect{|item| 
+							[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
+							:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
+			render :json => @build_json.to_json(:only => [:current_page, :per_page, :total_entries, :item, :id, :image, :thumb, :preview, :properties, :name]) 
 		}
 	end
   end
@@ -146,4 +123,36 @@ class ItemsController < ApplicationController
       format.json { head :ok }
     end
   end
+  
+  protected
+	def query
+		## new key/value pair search
+		@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
+
+		if !params["pair"].blank? 
+			params["pair"].each do |pair| 
+				@items = @items.find(:all, :conditions => ["properties.id = ? AND values.name REGEXP ?", pair["property_id"], pair["value"]])
+			end
+		end
+		
+		if !params[:property_id].blank?
+			@items = @items.find(:all, :conditions => ["properties.id IN ?", params[:property_id]])
+		end
+		
+		if !params[:value].blank?
+			params[:value].each do |value|
+				@items = @items.find(:all, :conditions => ["values.name REGEXP ?", value["value"]])
+			end
+		end
+		
+		# get rid of the join table - messes up JSON output (for now)
+		@items = Item.find(@items.collect{|item| [item.id]})
+		
+		if params["pair"].blank? && params[:value].blank? && params[:property_id].blank?
+			@items = Item.all
+		end
+		@items = @items.paginate(:per_page => 50, :page => params[:page])
+		@cache = Digest::MD5.hexdigest(@items.to_json())
+	end
+  
 end
