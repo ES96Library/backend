@@ -13,5 +13,5 @@ class Item < ActiveRecord::Base
 					  :path => ":attachment/:id/:hash.:extension",
 					  :hash_secret => "prototypingissuchabitch",
 					  :bucket => "es96library", 
-					  :default_url => 'http://placehold.it/260x400'					  
+					  :default_url => 'http://i.imgur.com/E9EFl.jpg'					  
 end

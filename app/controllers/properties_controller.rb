@@ -5,8 +5,7 @@ class PropertiesController < ApplicationController
   require 'will_paginate/array'
   
   def index
-    @properties = Property.all.paginate(:per_page => 50, :page => params[:page])
-  
+    @properties = Property.all.uniq.paginate(:per_page => 50, :page => params[:page])
     respond_to do |format|
       format.html # index.html.erb
       format.json { render :json => @properties.to_json(:only => [:id,:name])}
@@ -44,7 +43,6 @@ class PropertiesController < ApplicationController
   # POST /properties.json
   def create
     @property = Property.new(params[:property])
-    @property = {:id => @property.id, :property => @property.name, :items => @property.items.collect{|item| [item.id, item.values.where(:property_id => @property.id)]}}
     respond_to do |format|
       if @property.save
         format.html { redirect_to @property, notice: 'Property was successfully created.' }
@@ -60,7 +58,6 @@ class PropertiesController < ApplicationController
   # PUT /properties/1.json
   def update
     @property = Property.find(params[:id])
-    @property = {:id => @property.id, :property => @property.name, :items => @property.items.collect{|item| [item.id, item.values.where(:property_id => @property.id)]}}
     respond_to do |format|
       if @property.update_attributes(params[:property])
         format.html { redirect_to @property, notice: 'Property was successfully updated.' }
