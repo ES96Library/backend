@@ -4,6 +4,21 @@ class ItemsController < ApplicationController
   
   require 'will_paginate/array'
   
+  caches_action :show, :cache_path => proc { |i|  
+	  item = Item.find i.params[:id]
+	  {:tag => item.updated_at.to_i}
+  }
+  
+  caches_action :index, :cache_path => proc {|i|
+	  if !params[:page].blank?
+		page = params[:page].to_i
+	  else
+		page = 1
+	  end
+	  item = Item.order('id ASC').limit(50).offset(page*50-50).sort_by{|i| i.updated_at}.last
+	  {:tag => item.updated_at.to_i*1000 + page}
+  }
+  
   def search
 	## new key/value pair search
 	@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
@@ -35,11 +50,11 @@ class ItemsController < ApplicationController
 		format.html # index.html.erb
 		format.json { 
 			@build_json = {	:current_page => @items.current_page,
-							:per_page => @items.per_page,
-							:total_entries => @items.total_entries,
-							:item => @items.collect{|item| 
-							[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
-							:properties => item.values.collect{|value| [value.property.name, value.name]}]}}
+					:per_page => @items.per_page,
+					:total_entries => @items.total_entries,
+					:item => @items.collect{|item| 
+					[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
+					:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
 			render :json => @build_json.to_json(:only => [:current_page, :per_page, :total_entries, :total_pages, :next_page, :item, :id, :image, :thumb, :preview, :properties, :name]) 
 		}
 	end
@@ -52,11 +67,10 @@ class ItemsController < ApplicationController
       format.json { 
 		@build_json = {	:current_page => @items.current_page,
 						:per_page => @items.per_page,
-						:total_entries => @items.total_entries,
 						:item => @items.collect{|item| 
 						[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
-						:properties => item.values.collect{|value| [value.property.name, value.name]}]}}
-		render :json => @build_json.to_json(:only => [:current_page, :per_page, :total_entries, :item, :id, :image, :thumb, :preview, :properties, :name]) 
+						:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
+		render :json => @build_json.to_json(:only => [:current_page, :per_page, :item, :id, :image, :thumb, :preview, :properties, :name]) 
 	  }
     end
   end
@@ -65,7 +79,7 @@ class ItemsController < ApplicationController
   # GET /items/1.json
   def show
     @item = Item.find(params[:id])
-	@build_json = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.values.collect{|value| [value.property.name, value.name]}}
+	@build_json = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.properties.collect{|property| [property.name, property.values.where(:item_id => @item.id)]}}
     respond_to do |format|
       format.html # show.html.erb
 	  format.xml  { render xml: @build_json}
@@ -77,7 +91,7 @@ class ItemsController < ApplicationController
   # GET /items/new.json
   def new
     @item = Item.new
-	@build_json = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.values.collect{|value| [value.property.name, value.name]}}
+	@build_json = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.properties.collect{|property| [property.name, property.values.where(:item_id => @item.id)]}}
     respond_to do |format|
       format.html # new.html.erb
       format.json { render json: @build_json }
@@ -96,7 +110,6 @@ class ItemsController < ApplicationController
 	
     respond_to do |format|
       if @item.save
-	    @item = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.values.collect{|value| [value.property.name, value.name]}}
         format.html { redirect_to @item, notice: 'Item was successfully created.' }
         format.json { head :ok}
       else
@@ -113,7 +126,6 @@ class ItemsController < ApplicationController
 
     respond_to do |format|
       if @item.update_attributes(params[:item])
-	    @item = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.values.collect{|value| [value.property.name, value.name]}}
         format.html { redirect_to @item, notice: 'Item was successfully updated.' }
         format.json { head :ok }
       else
