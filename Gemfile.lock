@@ -14,7 +14,6 @@ GEM
       rack-mount (~> 0.8.2)
       rack-test (~> 0.6.1)
       sprockets (~> 2.0.0)
-    active_reload (0.6.1)
     activemodel (3.1.0)
       activesupport (= 3.1.0)
       bcrypt-ruby (~> 3.0.0)
@@ -51,7 +50,6 @@ GEM
       i18n (>= 0.4.0)
       mime-types (~> 1.16)
       treetop (~> 1.4.8)
-    memcache-client (1.8.5)
     mime-types (1.18)
     multi_json (1.2.0)
     multi_xml (0.4.2)
@@ -109,9 +107,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  active_reload
   aws-sdk (~> 1.3.4)
-  memcache-client
   mysql2 (> 0.3)
   paperclip (~> 2.4)
   rails (= 3.1.0)

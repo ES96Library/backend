@@ -6,7 +6,7 @@ gem 'rails', '3.1.0'
 gem 'mysql2', '> 0.3' #adds mysql support
 gem "paperclip", "~> 2.4" # image uploading
 gem 'aws-sdk', '~> 1.3.4' # image storage
-gem 'memcache-client'
+
 gem 'will_paginate', '~> 3.0' # paginates everything
 
 # Deploy with Capistrano
@@ -20,6 +20,3 @@ group :test do
   gem 'turn', :require => false
 end
 
-group :development do
-    gem 'active_reload'
-end
