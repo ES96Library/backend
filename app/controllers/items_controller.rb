@@ -21,10 +21,20 @@ class ItemsController < ApplicationController
 			@properties = Property.where(:name => @property.name)
 			@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
 			item = Item.find(@values.collect{|v| v.item_id}).sort_by{|i| i.updated_at}.last
+			sort = params[:sort_by].to_i
+			if params[:order].to_s == "ASC"
+				order = 1
+			elsif params[:order].to_s == "DESC"
+				order = 2
+			else
+				order = 3
+			end
 	  else
 		item = Item.order('id ASC').limit(50).offset(page*50-50).sort_by{|i| i.updated_at}.last
+		sort = 0
+		order = 0
 	  end
-	  {:tag => item.updated_at.to_i*1000 + page}
+	  {:tag => item.updated_at.to_i*10000000 + page*10000 + sort + order}
   }
   
   caches_action :search, :cache_path => proc {|i| {:tag => @cache.to_s} }
