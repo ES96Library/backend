@@ -12,7 +12,9 @@ class ValuesController < ApplicationController
 		v.each do |i|
 			if i.class != String
 				i.each do |j|
-					@valuesub << j.values unless j.values.blank?
+					j.values.each do |k|
+						@valuesub << k unless k.blank?
+					end
 					@propid = j.id
 				end
 			else
