@@ -12,7 +12,11 @@ Atoolkit2::Application.routes.draw do
 	resources :values
   end
   
-  resources :values
+  resources :values do 
+	collection do 
+		get :filters
+	end
+  end
 
   # The priority is based upon order of creation:
   # first created -> highest priority.

@@ -2,6 +2,31 @@ class ValuesController < ApplicationController
   # GET /values
   # GET /values.json
   
+  def filters
+	@values = []
+	@properties = Property.find(:all).group_by(&:name)
+	@properties.each do |v|
+		@valuesub = []
+		@propname = ''
+		@propid = 0
+		v.each do |i|
+			if i.class != String
+				i.each do |j|
+					@valuesub << j.values unless j.values.blank?
+					@propid = j.id
+				end
+			else
+				@propname = i
+			end
+		end
+		@values << {:id => @propid, :name => @propname, :values => @valuesub} unless @valuesub.blank?
+	end
+	respond_to do |format|
+      format.html # index.html.erb
+      format.json { render :json => @values.to_json(:except => [:created_at, :updated_at, :item_id, :property_id]) }
+    end
+  end
+  
   def index
     @values = Value.all
 
