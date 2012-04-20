@@ -1,5 +1,6 @@
 <h1>Editing item</h1>
 
+<%= image_tag @item.image.url(:thumb) %>
 <%= render 'form' %>
 
 <%= link_to 'Show', @item %> |

@@ -72,16 +72,21 @@ class ItemsController < ApplicationController
   # GET /items/new.json
   def new
     @item = Item.new
-	@build_json = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.properties.collect{|property| [property.name, property.values.where(:item_id => @item.id)]}}
+	1.times do
+		@item.values.build.build_property
+	end
     respond_to do |format|
       format.html # new.html.erb
-      format.json { render json: @build_json }
+      format.json { render json: @item }
     end
   end
 
   # GET /items/1/edit
   def edit
     @item = Item.find(params[:id])
+	1.times do
+		@item.values.build.build_property
+	end
   end
 
   # POST /items
@@ -139,7 +144,8 @@ class ItemsController < ApplicationController
 				@joined = true
 			end
 			params["pair"].each do |pair| 
-				@items = @items.find(:all, :conditions => ["properties.id = ? AND values.name REGEXP ?", pair["property_id"], pair["value"]])
+				@property = Property.find(pair["property_id"])
+				@items = @items.find(:all, :conditions => ["properties.name LIKE ? AND values.name REGEXP ?", @property.name, pair["value"]])
 			end
 		end
 		
@@ -167,7 +173,7 @@ class ItemsController < ApplicationController
 		end
 		
 		if @items.blank?
-			@cache = Digest::MD5.hexdigest('blank_search_win')
+			redirect_to :action => "index", :format => params[:format]
 		else
 			@cache = Digest::MD5.hexdigest(@items.paginate(:per_page => 50, :page => params[:page]).to_json())
 		end

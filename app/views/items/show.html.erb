@@ -1,5 +1,13 @@
 <p id="notice"><%= notice %></p>
 
 <%= image_tag @item.image(:preview) %></br>
+
+<% @item.values.each do |value| %>
+	<p>
+		<b><%= value.property.name %>: </b>
+		<%= value.name %>
+	</p>
+<% end %>
+
 <%= link_to 'Edit', edit_item_path(@item) %> |
 <%= link_to 'Back', items_path %>
