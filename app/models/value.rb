@@ -4,4 +4,11 @@ class Value < ActiveRecord::Base
 	accepts_nested_attributes_for :property, :allow_destroy => false
 	
 	attr_accessible :property_attributes, :name
+	
+	def self.search(query)
+		words = query.to_s.downcase.strip.split.uniq
+		words.inject(scoped) do |combined_scope, word|
+		  combined_scope.where("name LIKE ?", "%#{word}%")
+		end
+	end
 end

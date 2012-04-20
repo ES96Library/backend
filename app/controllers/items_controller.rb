@@ -145,7 +145,7 @@ class ItemsController < ApplicationController
 			end
 			params["pair"].each do |pair| 
 				@property = Property.find(pair["property_id"])
-				@items = @items.find(:all, :conditions => ["properties.name LIKE ? AND values.name REGEXP ?", @property.name, pair["value"]])
+				@items = Item.joins(:values, :properties).find(:all, :conditions => ["properties.name LIKE ? AND values.name LIKE ?", @property.name, pair["value"]]) & @items
 			end
 		end
 		
@@ -154,7 +154,7 @@ class ItemsController < ApplicationController
 				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
 				@joined = true
 			end
-			@items = @items.find(:all, :conditions => ["properties.id IN ?", params[:property_id]])
+			@items = Item.find(:all, :conditions => ["properties.id IN (?)", params[:property_id]]) & @items
 		end
 		
 		if !params[:value].blank?
@@ -162,9 +162,10 @@ class ItemsController < ApplicationController
 				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
 				@joined = true
 			end
-			params[:value].each do |value|
-				@items = @items.find(:all, :conditions => ["values.name REGEXP ?", value])
-			end
+			@value = params[:value]
+			@value.each {|x| @query = x}
+			@values = Value.search(@query)
+			@items = Item.find(@values.collect {|value| [value.item_id]}) & @items
 		end
 		
 		# get rid of the join table - messes up JSON output (for now)
@@ -172,7 +173,7 @@ class ItemsController < ApplicationController
 			@items = Item.find(@items.collect{|item| [item.id]})
 		end
 		
-		if @items.blank?
+		if @items.blank? && !@joined
 			redirect_to :action => "index", :format => params[:format]
 		else
 			@cache = Digest::MD5.hexdigest(@items.paginate(:per_page => 50, :page => params[:page]).to_json())
