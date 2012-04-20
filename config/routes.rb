@@ -1,14 +1,18 @@
 Atoolkit2::Application.routes.draw do
-  resources :values
-
+	
   resources :items do 
 	collection do
 		get :search
 		post :search
 	end
+	resources :values
   end
   
-  resources :properties
+  resources :properties do 
+	resources :values
+  end
+  
+  resources :values
 
   # The priority is based upon order of creation:
   # first created -> highest priority.

@@ -15,6 +15,14 @@ gem 'will_paginate', '~> 3.0' # paginates everything
 # To use debugger
 # gem 'ruby-debug19', :require => 'ruby-debug'
 
+group :assets do
+  gem 'sass-rails', "  ~> 3.1.0"
+  gem 'coffee-rails', "~> 3.1.0"
+  gem 'uglifier'
+end
+
+gem 'jquery-rails' # adds jquery support for rendering/serving JS
+
 group :test do
   # Pretty printed test output
   gem 'turn', :require => false

@@ -16,7 +16,14 @@ class ItemsController < ApplicationController
 	  else
 		page = 1
 	  end
-	  item = Item.order('id ASC').limit(50).offset(page*50-50).sort_by{|i| i.updated_at}.last
+	  if !params[:sort_by].blank? && !params[:order].blank?
+			@property = Property.find(params[:sort_by])
+			@properties = Property.where(:name => @property.name)
+			@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
+			item = Item.find(@values.collect{|v| v.item_id}).sort_by{|i| i.updated_at}.last
+	  else
+		item = Item.order('id ASC').limit(50).offset(page*50-50).sort_by{|i| i.updated_at}.last
+	  end
 	  {:tag => item.updated_at.to_i*1000 + page}
   }
   
@@ -42,7 +49,19 @@ class ItemsController < ApplicationController
   end
   
   def index
-    @items = Item.all.paginate(:per_page => 50, :page => params[:page])
+	if params[:sort_by].blank? || params[:order].blank?
+		@items = Item.all.paginate(:per_page => 50, :page => params[:page])
+	else
+		@property = Property.find(params[:sort_by])
+		@properties = Property.where(:name => @property.name)
+		@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
+		@items = []
+		@values.each do |v|
+			@item = Item.find(v.item_id)
+			@items << @item
+		end
+		@items = @items.paginate(:per_page => 50, :page => params[:page])
+	end
     respond_to do |format|
       format.html # index.html.erb
       format.json { 
@@ -109,7 +128,6 @@ class ItemsController < ApplicationController
   # PUT /items/1.json
   def update
     @item = Item.find(params[:id])
-
     respond_to do |format|
       if @item.update_attributes(params[:item])
         format.html { redirect_to @item, notice: 'Item was successfully updated.' }
@@ -143,7 +161,7 @@ class ItemsController < ApplicationController
 				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
 				@joined = true
 			end
-			params["pair"].each do |pair| 
+			params["pair"].each do |hash,pair| 
 				@property = Property.find(pair["property_id"])
 				@items = Item.joins(:values, :properties).find(:all, :conditions => ["properties.name LIKE ? AND values.name LIKE ?", @property.name, pair["value"]]) & @items
 			end
@@ -163,7 +181,7 @@ class ItemsController < ApplicationController
 				@joined = true
 			end
 			@value = params[:value]
-			@value.each {|x| @query = x}
+			@value.each {|hash,x| @query = x}
 			@values = Value.search(@query)
 			@items = Item.find(@values.collect {|value| [value.item_id]}) & @items
 		end

@@ -6,6 +6,7 @@
 	<p>
 		<b><%= value.property.name %>: </b>
 		<%= value.name %>
+		<%= link_to 'Remove', value, :confirm => 'Are you sure?', :method => :delete %>
 	</p>
 <% end %>
 
