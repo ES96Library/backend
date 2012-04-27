@@ -50,5 +50,9 @@ module Atoolkit2
 
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.0'
+	
+    # enable sweepers
+    config.autoload_paths << "/var/www/backend-lib/app/sweepers"
+	
   end
 end

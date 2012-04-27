@@ -1,3 +1,5 @@
+source :rubygems #blahblahblah
+
 gem 'rails', '3.1.0'
 
 # Bundle edge Rails instead:
@@ -15,13 +17,15 @@ gem 'will_paginate', '~> 3.0' # paginates everything
 # To use debugger
 # gem 'ruby-debug19', :require => 'ruby-debug'
 
-group :assets do
+group :assets do #required for the layouty stuff on the backend
   gem 'sass-rails', "  ~> 3.1.0"
   gem 'coffee-rails', "~> 3.1.0"
   gem 'uglifier'
 end
 
 gem 'jquery-rails' # adds jquery support for rendering/serving JS
+
+gem 'delayed_job_active_record' # allows processing on the backend
 
 group :test do
   # Pretty printed test output

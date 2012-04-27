@@ -2,9 +2,10 @@ class ValuesController < ApplicationController
   # GET /values
   # GET /values.json
   
+  before_filter :query, :only => [:filters]
+  
   def filters
 	@values = []
-	@properties = Property.find(:all).group_by(&:name)
 	@properties.each do |v|
 		@valuesub = []
 		@propname = ''
@@ -108,4 +109,53 @@ class ValuesController < ApplicationController
       format.json { head :ok }
     end
   end
+  
+  protected
+	def query
+		## new key/value pair search
+		@joined = false
+		
+		if !params["pair"].blank? 
+			if !@joined
+				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
+				@joined = true
+			end
+			params["pair"].each do |hash,pair| 
+				if pair["property_name"].blank?
+					@property = Property.find(pair["property_id"])
+					@items = Item.joins(:values, :properties).find(:all, :conditions => ["properties.name LIKE ? AND values.name LIKE ?", @property.name, pair["value"]]) & @items
+				else
+					@items = Item.joins(:values, :properties).find(:all, :conditions => ["properties.name LIKE ? AND values.name LIKE ?", pair["property_name"], pair["value"]]) & @items
+				end
+			end
+		end
+		
+		if !params[:property_id].blank?
+			if !@joined
+				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
+				@joined = true
+			end
+			@items = Item.find(:all, :conditions => ["properties.id IN (?)", params[:property_id]]) & @items
+		end
+		
+		if !params[:value].blank?
+			if !@joined
+				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
+				@joined = true
+			end
+			@value = params[:value]
+			@value.each {|hash,x| @query = x}
+			@values = Value.search(@query)
+			@items = Item.find(@values.collect {|value| [value.item_id]}) & @items
+		end
+		
+		# return relevant properties
+		if @joined
+			@items = Item.find(@items.collect{|item| [item.id]})
+			@properties = @items.collect{|item| item.properties}.group_by(&:name)
+		elsif @items.blank? 
+			@properties = Property.find(:all).group_by(&:name)
+		end
+	end
+  
 end
