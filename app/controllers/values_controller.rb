@@ -153,7 +153,7 @@ class ValuesController < ApplicationController
 		if @joined
 			@items = Item.find(@items.collect{|item| [item.id]})
 			@properties = @items.collect{|item| item.properties}.group_by(&:name)
-		elsif @items.blank? 
+		else
 			@properties = Property.find(:all).group_by(&:name)
 		end
 	end
