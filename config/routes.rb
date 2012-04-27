@@ -15,6 +15,7 @@ Atoolkit2::Application.routes.draw do
   resources :values do 
 	collection do 
 		get :filters
+		post :filters
 	end
   end
 
