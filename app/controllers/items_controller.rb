@@ -274,8 +274,7 @@ class ItemsController < ApplicationController
 	
 	def get_index # runs before index and the cache is called
 		if !params[:sort_by].blank? && !params[:order].blank? # sorting and ordering
-			@property = Property.find(params[:sort_by])
-			@properties = Property.where(:name => @property.name)
+			@properties = Property.where(:name => params[:sort_by])
 			@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
 		end
 	end
