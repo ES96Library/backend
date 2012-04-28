@@ -33,7 +33,8 @@ class ItemsController < ApplicationController
 	else
 		item = Item.order('id ASC').limit(50).offset(page*50-50).sort_by{|i| i.updated_at}.last
 	end
-	@time = item.updated_at.to_s
+	@time = 0
+	@time = item.updated_at.to_s unless item.blank?
 	@params = i.request.url.to_s
 	@cache = "#{@time}#{@params}"
 	{:tag => @cache}
@@ -157,7 +158,7 @@ class ItemsController < ApplicationController
 			@item = Item.includes(:properties).find(v.item_id)
 			@items << @item
 		end
-		@items = @items.paginate(:per_page => 50, :page => params[:page])
+		@items = @items.uniq.paginate(:per_page => 50, :page => params[:page])
 	elsif !params[:order].blank?  # ordering but no sorting
 		@items = Item.includes(:properties).order("id #{params[:order].to_s}").paginate(:per_page => 50, :page => params[:page])
 	end
