@@ -63,14 +63,17 @@ class ItemsController < ApplicationController
 		params["pair"].each do |hash,pair| 
 			if pair["property_name"].blank?
 				@property = Property.find(pair["property_id"])
-				@values = Value.includes(:item).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", pair["value"], @property.name])
+				@valuename = pair["value"]
+				@values = Value.includes(:item).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", @valuename, @property.name])
 				if !@items.nil?
 					@items = @values.collect{|value| value.item} & @items
 				else
 					@items = @values.collect{|value| value.item}
 				end
 			else
-				@values = Value.includes(:item).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", pair["value"], pair["property_name"]])
+				@valuename = pair["value"]
+				@propertyname = pair["property_name"]
+				@values = Value.includes(:item).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", @valuename, @propertyname])
 				if !@items.nil?
 					@items = @values.collect{|value| value.item} & @items
 				else
@@ -125,8 +128,8 @@ class ItemsController < ApplicationController
 			@items = @items.sort_by{|i| i.id}
 		end
 	else # run the complex sorting
-		@properties = @items.collect{|item| item.properties}
-		@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
+		@properties = Property.where(:name => params[:sort_by])
+		@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?) AND item_id IN (?)", @properties.collect{|p| p.id.to_i}, @items.collect{|item| item.id}])
 		@items = []
 		@values.each do |v|
 			@item = Item.find(v.item_id)
