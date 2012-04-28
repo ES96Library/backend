@@ -3,7 +3,6 @@ class ItemsController < ApplicationController
   # GET /items.json
   
   require 'will_paginate/array' # for pagination
-  before_filter :query, :only => [:search] # runs the query before the caching
   before_filter :get_index, :only => [:index] # runs index sorting/fancy stuff before caching
   before_filter :write_pagination_to_cookie, :only => [:index] # gets number of items in DB
 
@@ -20,10 +19,7 @@ class ItemsController < ApplicationController
   # 	page
   # 	sort order
   # 	date/time offset
-  # 	time an item was updated
-  #
-  #	Way to do it: 
-  #			
+  # 	time an item was updated		
   
   caches_action :index, :cache_path => proc {|i|
 	page = 1
@@ -44,11 +40,12 @@ class ItemsController < ApplicationController
   }
   
   # caching search 
-  # same way as index
+  # just check the last updated item 
   caches_action :search, :cache_path => proc {|i| 
-	  @params = i.request.url.to_s
-	  @cache = Digest::MD5.hexdigest("#{@items.paginate(:per_page => 50, :page => i.params[:page]).collect{|item| [item.id, item.updated_at]}}#{@params}")
-	  {:tag => @cache} 
+	@time = Item.order('updated_at DESC').limit(1).find(:all).first.updated_at.to_s 
+	@params = i.params.to_s
+	@cache = "#{@time}#{@params}"
+	{:tag => @cache}
   }
   
   cache_sweeper :item_sweeper, :only => [:create, :update, :destroy]
@@ -56,6 +53,86 @@ class ItemsController < ApplicationController
   ########### functions #############
   
   def search
+	@joined = false
+	@items = nil
+	
+	if !params["pair"].blank? 
+		if !@joined
+			@joined = true
+		end
+		params["pair"].each do |hash,pair| 
+			if pair["property_name"].blank?
+				@property = Property.find(pair["property_id"])
+				@values = Value.includes(:item).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", pair["value"], @property.name])
+				if !@items.nil?
+					@items = @values.collect{|value| value.item} & @items
+				else
+					@items = @values.collect{|value| value.item}
+				end
+			else
+				@values = Value.includes(:item).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", pair["value"], pair["property_name"]])
+				if !@items.nil?
+					@items = @values.collect{|value| value.item} & @items
+				else
+					@items = @values.collect{|value| value.item}
+				end
+			end
+		end
+	end
+			
+	if !params[:property_id].blank?
+		if !@joined
+			@joined = true
+		end
+		if !@items.nil?
+			@items = Item.find(:all, :conditions => ["properties.id IN (?)", params[:property_id]]) & @items
+		else
+			@items = Item.find(:all, :conditions => ["properties.id IN (?)", params[:property_id]])
+		end
+	end
+			
+	if !params[:value].blank?
+		if !@joined
+			@joined = true
+		end
+		@value = params[:value]
+		@value.each {|hash,x| @query = x}
+		@values = Value.search(@query)
+		if !@items.nil?
+			@items = Item.find(@values.collect {|value| [value.item_id]}) & @items
+		else
+			@items = Item.find(@values.collect {|value| [value.item_id]})
+		end
+	end
+	
+	# get us out of here if we don't need to be here
+	if @items.blank? && !@joined
+		redirect_to :action => "index", :format => params[:format]
+		return
+	end
+	
+	# get rid of the join table - messes up JSON output (for now)
+	if @joined
+		# do nothing
+	end		
+	
+	if params[:sort_by].blank? && params[:order].blank? # no sorting or ordering
+		# do nothing
+	elsif !params[:order].blank? && params[:sort_by].blank? # ordering but no sorting
+		if params[:order].to_s == 'DESC'
+			@items = @items.sort_by{|i| -i.id}
+		else
+			@items = @items.sort_by{|i| i.id}
+		end
+	else # run the complex sorting
+		@properties = @items.collect{|item| item.properties}
+		@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
+		@items = []
+		@values.each do |v|
+			@item = Item.find(v.item_id)
+			@items << @item
+		end
+	end		
 	@items = @items.paginate(:per_page => 50, :page => params[:page])
 	respond_to do |format|
 		format.html # search.html.erb (doesn't exist)
@@ -74,12 +151,12 @@ class ItemsController < ApplicationController
 	if !params[:sort_by].blank? && !params[:order].blank?
 		@items = []
 		@values.each do |v|
-			@item = Item.find(v.item_id)
+			@item = Item.includes(:properties).find(v.item_id)
 			@items << @item
 		end
 		@items = @items.paginate(:per_page => 50, :page => params[:page])
 	elsif !params[:order].blank?  # ordering but no sorting
-		@items = Item.order("id #{params[:order].to_s}").paginate(:per_page => 50, :page => params[:page])
+		@items = Item.includes(:properties).order("id #{params[:order].to_s}").paginate(:per_page => 50, :page => params[:page])
 	end
 	if !params[:offset].blank? # provide a time offset
 		if !@items.blank?
@@ -87,9 +164,9 @@ class ItemsController < ApplicationController
 		else
 			@items = Item.where(:created_at => (params[:offset].to_datetime)..Time.now)
 		end
-		@items = @items.paginate(:per_page => 50, :page => params[:page])
+		@items = @items.includes(:properties).paginate(:per_page => 50, :page => params[:page])
 	elsif params[:sort_by].blank? && params[:order].blank? # no sorting or ordering
-		@items = Item.all.paginate(:per_page => 50, :page => params[:page])
+		@items = Item.includes(:properties).paginate(:per_page => 50, :page => params[:page])
 	end
     respond_to do |format|
       format.html # index.html.erb
@@ -202,71 +279,5 @@ class ItemsController < ApplicationController
 			@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
 		end
 	end
-	
-	def query # runs before search or cache is called
-		## new key/value pair search
-		@joined = false
-		
-		if !params["pair"].blank? 
-			if !@joined
-				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
-				@joined = true
-			end
-			params["pair"].each do |hash,pair| 
-				if pair["property_name"].blank?
-					@property = Property.find(pair["property_id"])
-					@items = Item.joins(:values, :properties).find(:all, :conditions => ["properties.name LIKE ? AND values.name LIKE ?", @property.name, pair["value"]]) & @items
-				else
-					@items = Item.joins(:values, :properties).find(:all, :conditions => ["properties.name LIKE ? AND values.name LIKE ?", pair["property_name"], pair["value"]]) & @items
-				end
-			end
-		end
-				
-		if !params[:property_id].blank?
-			if !@joined
-				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
-				@joined = true
-			end
-			@items = Item.find(:all, :conditions => ["properties.id IN (?)", params[:property_id]]) & @items
-		end
-				
-		if !params[:value].blank?
-			if !@joined
-				@items = Item.joins(:values, :properties) # create an item pointer that points to everything in the DB
-				@joined = true
-			end
-			@value = params[:value]
-			@value.each {|hash,x| @query = x}
-			@values = Value.search(@query)
-			@items = Item.find(@values.collect {|value| [value.item_id]}) & @items
-		end
-		
-		# get us out of here if we don't need to be here
-		if @items.blank? && !@joined
-			redirect_to :action => "index", :format => params[:format]	
-		end
-		
-		# get rid of the join table - messes up JSON output (for now)
-		if @joined
-			@items = Item.find(@items.collect{|item| [item.id]})
-		end		
-		
-		if params[:sort_by].blank? && params[:order].blank? # no sorting or ordering
-			# do nothing
-		elsif !params[:order].blank? && params[:sort_by].blank? # ordering but no sorting
-			if params[:order].to_s == 'DESC'
-				@items = @items.sort_by{|i| -i.id}
-			else
-				@items = @items.sort_by{|i| i.id}
-			end
-		else # run the complex sorting
-			@properties = @items.collect{|item| item.properties}
-			@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
-			@items = []
-			@values.each do |v|
-				@item = Item.find(v.item_id)
-				@items << @item
-			end
-		end		
-	end
+
 end
