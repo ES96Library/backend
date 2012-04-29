@@ -3,8 +3,8 @@ class ValuesController < ApplicationController
   # GET /values.json
   
   caches_action :filters, :cache_path => proc { |i|
-	@time = Item.order('updated_at DESC').limit(1).first.updated_at.to_s
-	@params = i.params.to_s
+	@time = Item.order('updated_at DESC').limit(1).first.updated_at
+	@params = i.params
 	@cache = "#{@time}#{@params}"
 	{:tag => @cache}
   }
@@ -138,7 +138,7 @@ class ValuesController < ApplicationController
     respond_to do |format|
       if @value.save
         format.html { redirect_to @value, notice: 'Value was successfully created.' }
-        format.json { render json: @value, status: :created, location: @value }
+        format.json { head :ok }
       else
         format.html { render action: "new" }
         format.json { render json: @value.errors, status: :unprocessable_entity }

@@ -225,7 +225,7 @@ class ItemsController < ApplicationController
     respond_to do |format|
       if @item.save
         format.html { redirect_to @item, notice: 'Item was successfully created.' }
-        format.json { redirect_to :action => "show", :format => params[:format], :id => @item.id }
+        format.json { head :ok }
       else
         format.html { render action: "new" }
         format.json { render json: @item.errors, status: :unprocessable_entity }
@@ -240,7 +240,7 @@ class ItemsController < ApplicationController
     respond_to do |format|
       if @item.update_attributes(params[:item])
         format.html { redirect_to @item, notice: 'Item was successfully updated.' }
-        format.json { redirect_to :action => "show", :format => params[:format], :id => @item.id }
+        format.json { head :ok }
       else
         format.html { render action: "edit" }
         format.json { render json: @item.errors, status: :unprocessable_entity }
@@ -256,7 +256,7 @@ class ItemsController < ApplicationController
 
     respond_to do |format|
       format.html { redirect_to(:back) }
-      format.json { redirect_to :action => "index", :format => params[:format] }
+      format.json { head :ok }
     end
   end
   
