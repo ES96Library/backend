@@ -3,7 +3,7 @@ class ValuesController < ApplicationController
   # GET /values.json
   
   caches_action :filters, :cache_path => proc { |i|
-	@time = Item.order('updated_at DESC').limit(1).find(:all).first.updated_at.to_s
+	@time = Item.order('updated_at DESC').limit(1).first.updated_at.to_s
 	@params = i.params.to_s
 	@cache = "#{@time}#{@params}"
 	{:tag => @cache}
