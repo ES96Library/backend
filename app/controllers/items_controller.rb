@@ -182,6 +182,13 @@ class ItemsController < ApplicationController
 						:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
 		render :json => @build_json.to_json(:only => [:current_page, :per_page, :item, :id, :image, :thumb, :preview, :properties, :name]) 
 	  }
+	  format.xml { @build_json = {	:current_page => @items.current_page,
+						:per_page => @items.per_page,
+						:item => @items.collect{|item| 
+						[item.id, :image => item.image.url, :thumb => item.image.url(:thumb), :preview => item.image.url(:preview), 
+						:properties => item.properties.collect{|property| [property.name, property.values.where(:item_id => item.id)]}]}}
+		render :xml => @build_json.to_xml(:only => [:current_page, :per_page, :item, :id, :image, :thumb, :preview, :properties, :name])
+	  }
     end
   end
 
