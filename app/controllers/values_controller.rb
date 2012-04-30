@@ -20,14 +20,14 @@ class ValuesController < ApplicationController
 		params["pair"].each do |hash,pair| 
 			if pair["property_name"].blank?
 				@property = Property.find(pair["property_id"])
-				@values = Value.includes(:property).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", pair["value"], @property.name])
+				@values = Value.includes(:item).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", pair["value"], @property.name])
 				if !@items.nil?
 					@items = @values.collect{|value| value.item} & @items
 				else
 					@items = @values.collect{|value| value.item}
 				end
 			else
-				@values = Value.includes(:property).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", pair["value"], pair["property_name"]])
+				@values = Value.includes(:item).joins(:property).find(:all, :conditions => ["values.name LIKE ? AND properties.name LIKE ?", pair["value"], pair["property_name"]])
 				if !@items.nil?
 					@items = @values.collect{|value| value.item} & @items
 				else
@@ -64,7 +64,7 @@ class ValuesController < ApplicationController
 	
 	# return relevant properties
 	if @joined
-		@properties = Property.find(@items.collect{|item| item.properties.collect{|property| property.id}}).group_by(&:name)
+		@properties = Property.find(@items.collect{|item| item.properties.collect{|property| property.id}}, :include => [:values]).group_by(&:name)
 	else
 		@properties = Property.find(:all, :include => [:values]).group_by(&:name)
 	end

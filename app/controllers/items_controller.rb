@@ -89,9 +89,9 @@ class ItemsController < ApplicationController
 			@joined = true
 		end
 		if !@items.nil?
-			@items = Item.find(:all, :conditions => ["properties.id IN (?)", params[:property_id]]) & @items
+			@items = Item.includes(:properties).find(:all, :conditions => ["properties.id IN (?)", params[:property_id]]) & @items
 		else
-			@items = Item.find(:all, :conditions => ["properties.id IN (?)", params[:property_id]])
+			@items = Item.includes(:properties).find(:all, :conditions => ["properties.id IN (?)", params[:property_id]])
 		end
 	end
 			
@@ -103,9 +103,9 @@ class ItemsController < ApplicationController
 		@value.each {|hash,x| @query = x}
 		@values = Value.search(@query)
 		if !@items.nil?
-			@items = Item.find(@values.collect {|value| [value.item_id]}) & @items
+			@items = Item.includes(:properties).find(@values.collect {|value| [value.item_id]}) & @items
 		else
-			@items = Item.find(@values.collect {|value| [value.item_id]})
+			@items = Item.includes(:properties).find(@values.collect {|value| [value.item_id]})
 		end
 	end
 	
@@ -130,10 +130,10 @@ class ItemsController < ApplicationController
 		end
 	else # run the complex sorting
 		@properties = Property.where(:name => params[:sort_by])
-		@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?) AND item_id IN (?)", @properties.collect{|p| p.id.to_i}, @items.collect{|item| item.id}])
+		@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?) AND item_id IN (?)", @properties.collect{|p| p.id.to_i}, @items.collect{|item| item.id}], :include => [:item])
 		@items = []
 		@values.each do |v|
-			@item = Item.find(v.item_id)
+			@item = v.item
 			@items << @item
 		end
 	end		
@@ -155,7 +155,7 @@ class ItemsController < ApplicationController
 	if !params[:sort_by].blank? && !params[:order].blank?
 		@items = []
 		@values.each do |v|
-			@item = Item.includes(:properties).find(v.item_id)
+			@item = v.item
 			@items << @item
 		end
 		@items = @items.uniq.paginate(:per_page => 50, :page => params[:page])
@@ -164,11 +164,11 @@ class ItemsController < ApplicationController
 	end
 	if !params[:offset].blank? # provide a time offset
 		if !@items.blank?
-			@items = Item.where(:created_at => (params[:offset].to_datetime)..Time.now) & @items
+			@items = Item.includes(:properties).where(:created_at => (params[:offset].to_datetime)..Time.now) & @items
 		else
-			@items = Item.where(:created_at => (params[:offset].to_datetime)..Time.now)
+			@items = Item.includes(:properties).where(:created_at => (params[:offset].to_datetime)..Time.now)
 		end
-		@items = @items.includes(:properties).paginate(:per_page => 50, :page => params[:page])
+		@items = @items.paginate(:per_page => 50, :page => params[:page])
 	elsif params[:sort_by].blank? && params[:order].blank? # no sorting or ordering
 		@items = Item.includes(:properties).paginate(:per_page => 50, :page => params[:page])
 	end
@@ -195,7 +195,7 @@ class ItemsController < ApplicationController
   # GET /items/1
   # GET /items/1.json
   def show
-    @item = Item.find(params[:id])
+    @item = Item.includes(:properties).find(params[:id])
 	@build_json = {:id => @item.id, :image => @item.image.url, :thumb => @item.image.url(:thumb), :preview => @item.image.url(:preview), :properties => @item.properties.collect{|property| [property.name, property.values.where(:item_id => @item.id)]}}
     respond_to do |format|
       format.html # show.html.erb
@@ -286,7 +286,7 @@ class ItemsController < ApplicationController
 	def get_index # runs before index and the cache is called
 		if !params[:sort_by].blank? && !params[:order].blank? # sorting and ordering
 			@properties = Property.where(:name => params[:sort_by])
-			@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id.to_i}])
+			@values = Value.order("name #{params[:order].to_s}").find(:all, :conditions => ["property_id IN (?)", @properties.collect{|p| p.id}], :include => [:item])
 		end
 	end
 
