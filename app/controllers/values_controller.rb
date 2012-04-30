@@ -3,13 +3,9 @@ class ValuesController < ApplicationController
   # GET /values.json
   
   caches_action :filters, :cache_path => proc { |i|
-	start_time = Time.now
 	@time = Item.order('updated_at DESC').limit(1).first.updated_at
 	@params = i.params
 	@cache = "#{@time}#{@params}"
-	end_time = Time.now
-	elapsed_time = end_time - start_time
-	logger.debug elapsed_time
 	{:tag => @cache}
   }
   
@@ -70,7 +66,7 @@ class ValuesController < ApplicationController
 	if @joined
 		@properties = Property.find(@items.collect{|item| item.properties.collect{|property| property.id}}).group_by(&:name)
 	else
-		@properties = Property.find(:all).group_by(&:name)
+		@properties = Property.find(:all, :include => [:values]).group_by(&:name)
 	end
 	
 	@values = []
