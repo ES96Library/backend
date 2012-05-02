@@ -139,7 +139,7 @@ class ItemsController < ApplicationController
 	end		
 	@items = @items.paginate(:per_page => 50, :page => params[:page])
 	respond_to do |format|
-		format.html # search.html.erb (doesn't exist)
+		format.html # search.html.erb 
 		format.json { 
 			@build_json = {	:current_page => @items.current_page,
 							:per_page => @items.per_page,
