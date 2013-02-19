@@ -13,6 +13,6 @@ class Item < ActiveRecord::Base
 					  :s3_storage_class => :reduced_redundancy,
 					  :path => ":attachment/:id/:hash.:extension",
 					  :hash_secret => "prototypingissuchabitch",
-					  :bucket => "es96library", 
+					  :bucket => "your_S3_bucket", 
 					  :default_url => 'http://i.imgur.com/E9EFl.jpg'					  
 end
